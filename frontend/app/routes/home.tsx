@@ -59,7 +59,7 @@ const features = [
       </svg>
     ),
     title: "No account needed",
-    desc: "Share a 6-character code. Anyone joins with a display name.",
+    desc: "Share a secure 12-character code. Anyone joins with a display name.",
     span: "",
   },
   {
@@ -117,7 +117,7 @@ const stats = [
 ];
 
 const steps = [
-  { num: "01", title: "Create a group", desc: "Spin up a workspace in one click. Get a 6-character code instantly." },
+  { num: "01", title: "Create a group", desc: "Spin up a workspace in one click. Get a secure code instantly." },
   { num: "02", title: "Share the code", desc: "Paste it anywhere. Teammates join with just a display name — no account." },
   { num: "03", title: "Write together", desc: "Edit in real time with live cursors. Everything merges, nothing conflicts." },
 ];

@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { toast } from "sonner";
 import { CheckIcon } from "~/components/icons";
 
 type CopyButtonProps = {
@@ -15,15 +14,17 @@ export function CopyButton({
   className = "",
 }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
 
   async function handleCopy() {
     try {
       await navigator.clipboard.writeText(value);
       setCopied(true);
-      toast.success("Copied to clipboard");
+      setCopyFailed(false);
       setTimeout(() => setCopied(false), 1800);
     } catch {
-      toast.error("Couldn't copy — try selecting manually");
+      setCopyFailed(true);
+      setTimeout(() => setCopyFailed(false), 2400);
     }
   }
 
@@ -37,7 +38,7 @@ export function CopyButton({
       }
     >
       {copied ? <CheckIcon /> : null}
-      {copied ? "Copied" : label}
+      {copied ? "Copied" : copyFailed ? "Couldn't copy" : label}
     </button>
   );
 }

@@ -136,8 +136,8 @@ export function JoinGroupModal({
               onChange={(e) => setCode(e.target.value)}
               autoComplete="off"
               autoCapitalize="characters"
-              placeholder="e.g. 7QK3PZ"
-              maxLength={8}
+              placeholder="e.g. 7QK3PZ8M4VHT"
+              maxLength={12}
               className="rounded-xl px-3.5 py-2.5 text-sm outline-none transition-colors duration-150 focus:border-[var(--accent)]"
               style={glassInputStyle}
             />

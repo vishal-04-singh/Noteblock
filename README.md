@@ -44,10 +44,10 @@ A modern, high-polish, full-stack **Notion-like collaborative workspace** applic
 - **Build Tool**: Vite v8, TypeScript
 
 ### Backend
-- **Runtime**: Node.js & Express.js
-- **Database ORM**: Prisma ORM
+- **Runtime**: Go (`net/http`)
+- **Database access**: `pgx` PostgreSQL driver with a bounded connection pool
 - **Database**: PostgreSQL
-- **Authentication**: Passport.js (Google & GitHub OAuth), `cookie-session`, `cookie-parser`
+- **Authentication**: GitHub and Google OAuth 2.0 with signed, HTTP-only sessions
 - **Security**: Signed HTTP-only cookies, CORS credential policies
 
 ---
@@ -57,12 +57,11 @@ A modern, high-polish, full-stack **Notion-like collaborative workspace** applic
 ```
 notion-like-app/
 ├── README.md
-├── backend/
-│   ├── package.json
-│   ├── server.js               # Express application entrypoint & middleware configuration
-│   ├── prisma/
-│   │   └── schema.prisma       # Prisma relational data model
-│   └── src/
+├── backend-go/                 # Production Go API; uses the existing database schema
+│   ├── cmd/server/             # API entrypoint and handlers
+│   ├── Dockerfile
+│   └── .env.example
+├── backend/                    # Legacy Express implementation (not used for new deployments)
 │       ├── passport.js         # Passport OAuth strategies configuration
 │       ├── prisma.js           # Shared Prisma Client instance
 │       ├── routes/
@@ -282,24 +281,28 @@ model Favorite {
 
 ---
 
-### 1️⃣ Backend Setup
+### 1️⃣ Go backend setup
 
-Navigate to the `backend` directory:
+Navigate to the Go backend directory:
 ```bash
-cd backend
+cd backend-go
 ```
 
-Install dependencies:
+Create its environment file:
 ```bash
-npm install
+cp .env.example .env
 ```
 
-Create a `.env` file inside `backend/`:
+Configure `.env` inside `backend-go/`:
 ```env
 PORT=4000
 FRONTEND_URL=http://localhost:5173
+BACKEND_URL=http://localhost:4000
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/notion_app?schema=public"
-SESSION_SECRET="your-super-secret-key-change-this"
+SESSION_SECRET="replace-this-with-a-long-random-secret-at-least-32-characters"
+# Keep this within the database's connection limit. Defaults are 20 and 2.
+DB_MAX_CONNS=20
+DB_MIN_CONNS=2
 
 # OAuth Keys (Optional for Local Dev)
 GOOGLE_CLIENT_ID="your-google-client-id"
@@ -311,16 +314,42 @@ GITHUB_CLIENT_SECRET="your-github-client-secret"
 GITHUB_CALLBACK_URL="http://localhost:4000/auth/github/callback"
 ```
 
-Initialize Prisma database schema:
+Set a long, random `SESSION_SECRET`, configure `DATABASE_URL`, and (if needed)
+configure the OAuth credentials. The GitHub callback URL in the GitHub OAuth
+App must exactly match `GITHUB_CALLBACK_URL`.
+
+The Go backend uses the existing PostgreSQL schema. For a fresh database, use
+the checked-in Prisma migrations once; no data migration is needed for an
+existing deployment.
 ```bash
-npx prisma db push
+cd ../backend
+npx prisma migrate deploy
+cd ../backend-go
 ```
 
 Start the backend development server:
 ```bash
-npm run dev
+go run ./cmd/server
 ```
 The server will run on **http://localhost:4000**.
+
+### Render deployment and GitHub login
+
+Deploy `backend-go/` as the API service (using its included Dockerfile). Set
+`BACKEND_URL` to its public HTTPS URL and `FRONTEND_URL` to the public frontend
+URL. Use the same long `SESSION_SECRET` as the previous Express deployment to
+keep existing signed sessions valid during the cutover.
+
+In the GitHub OAuth App, set **Authorization callback URL** to exactly:
+
+```text
+https://your-api.onrender.com/auth/github/callback
+```
+
+This must exactly equal `GITHUB_CALLBACK_URL` in Render—protocol, hostname,
+and path included. Also set `COOKIE_SECURE=true` in Render. An old or incorrect
+callback URL, a client secret from a different OAuth App, or a reused callback
+code is what causes GitHub's “Failed to obtain access token” error.
 
 ---
 

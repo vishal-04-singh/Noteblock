@@ -113,8 +113,8 @@ export default function JoinPage() {
                 type="text"
                 autoComplete="off"
                 autoCapitalize="characters"
-                placeholder="e.g. 7QK3PZ"
-                maxLength={8}
+                placeholder="e.g. 7QK3PZ8M4VHT"
+                maxLength={12}
                 className="rounded-xl border px-3.5 py-2.5 text-sm placeholder:text-white/25 outline-none transition-colors duration-150 focus:border-white/[0.2] focus:bg-white/[0.05]"
                 style={{ borderColor: 'var(--border)', background: 'var(--surface-1)', color: 'var(--text-primary)' }}
               />
