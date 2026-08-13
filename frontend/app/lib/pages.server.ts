@@ -2,6 +2,7 @@ import { getBackendUrl } from "~/lib/auth.server";
 
 export type PageSummary = {
   id: string;
+  parentId: string | null;
   title: string;
   icon: string | null;
   updatedAt: string;
@@ -69,11 +70,12 @@ export async function listPages(request: Request, groupId: string) {
 export async function createPage(
   request: Request,
   groupId: string,
-  title?: string
+  title?: string,
+  parentId?: string
 ) {
   return backendFetch(request, `/group/${groupId}/pages`, {
     method: "POST",
-    body: JSON.stringify({ title }),
+    body: JSON.stringify({ title, parentId }),
   });
 }
 

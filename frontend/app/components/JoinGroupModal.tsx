@@ -63,11 +63,11 @@ export function JoinGroupModal({
   }
 
   const glassPanelStyle: React.CSSProperties = {
-    background: 'var(--bg-secondary)',
-    backdropFilter: 'blur(24px) saturate(180%)',
-    WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-    border: '1px solid var(--border)',
-    boxShadow: 'var(--shadow-modal)',
+    background: 'linear-gradient(145deg, color-mix(in srgb, var(--bg-secondary) 86%, rgba(255,255,255,.12)), color-mix(in srgb, var(--bg-secondary) 72%, transparent))',
+    backdropFilter: 'blur(32px) saturate(180%) brightness(1.05)',
+    WebkitBackdropFilter: 'blur(32px) saturate(180%) brightness(1.05)',
+    border: '1px solid color-mix(in srgb, var(--border) 84%, rgba(255,255,255,.18))',
+    boxShadow: 'var(--shadow-modal), inset 0 1px 0 rgba(255,255,255,.14), inset 0 0 0 1px rgba(255,255,255,.025)',
   };
 
   const glassInputStyle: React.CSSProperties = {

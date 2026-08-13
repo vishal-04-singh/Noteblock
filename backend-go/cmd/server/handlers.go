@@ -377,6 +377,12 @@ func nullString(v string) any {
 	}
 	return v
 }
+func nullStringPtr(v *string) any {
+	if v == nil || *v == "" {
+		return nil
+	}
+	return *v
+}
 
 func (s *server) joinGroup(w http.ResponseWriter, r *http.Request) {
 	var b struct {
@@ -536,7 +542,7 @@ func (s *server) listPages(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 500, "Couldn't load pages.")
 		return
 	}
-	rows, err := s.db.Query(r.Context(), `SELECT "id","title","icon","updatedAt","createdAt","lastEditedByName","isPublic" FROM "Page" WHERE "groupId"=$1 ORDER BY "updatedAt" DESC`, id)
+	rows, err := s.db.Query(r.Context(), `SELECT "id","parentId","title","icon","updatedAt","createdAt","lastEditedByName","isPublic" FROM "Page" WHERE "groupId"=$1 ORDER BY "updatedAt" DESC`, id)
 	if err != nil {
 		s.dbError(err)
 		writeError(w, 500, "Couldn't load pages.")
@@ -546,11 +552,12 @@ func (s *server) listPages(w http.ResponseWriter, r *http.Request) {
 	out := []map[string]any{}
 	for rows.Next() {
 		var pid, title string
+		var parent *string
 		var icon, editor *string
 		var updated, created time.Time
 		var public bool
-		if rows.Scan(&pid, &title, &icon, &updated, &created, &editor, &public) == nil {
-			out = append(out, map[string]any{"id": pid, "title": title, "icon": icon, "updatedAt": updated, "createdAt": created, "lastEditedByName": editor, "isPublic": public})
+		if rows.Scan(&pid, &parent, &title, &icon, &updated, &created, &editor, &public) == nil {
+			out = append(out, map[string]any{"id": pid, "parentId": parent, "title": title, "icon": icon, "updatedAt": updated, "createdAt": created, "lastEditedByName": editor, "isPublic": public})
 		}
 	}
 	writeJSON(w, 200, map[string]any{"pages": out, "group": map[string]string{"name": name, "code": code}})
@@ -562,7 +569,8 @@ func (s *server) createPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var b struct {
-		Title string `json:"title"`
+		Title    string  `json:"title"`
+		ParentID *string `json:"parentId"`
 	}
 	if err := decode(r, &b); err != nil {
 		writeError(w, 400, "Invalid request body.")
@@ -576,9 +584,17 @@ func (s *server) createPage(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 400, "Title must be at most 200 characters.")
 		return
 	}
+	if b.ParentID != nil && *b.ParentID != "" {
+		var exists bool
+		err := s.db.QueryRow(r.Context(), `SELECT EXISTS(SELECT 1 FROM "Page" WHERE "id"=$1 AND "groupId"=$2)`, *b.ParentID, gid).Scan(&exists)
+		if err != nil || !exists {
+			writeError(w, 400, "The parent page no longer exists in this group.")
+			return
+		}
+	}
 	id := randomID(18)
 	content := json.RawMessage(`{}`)
-	page, err := s.insertPage(r.Context(), id, gid, title, content, m)
+	page, err := s.insertPage(r.Context(), id, gid, title, content, b.ParentID, m)
 	if err != nil {
 		s.dbError(err)
 		writeError(w, 500, "Couldn't create the page.")
@@ -713,7 +729,7 @@ func (s *server) duplicatePage(w http.ResponseWriter, r *http.Request) {
 	}
 	title := fmt.Sprintf("%s (copy)", old["title"])
 	content := old["content"].(json.RawMessage)
-	page, err := s.insertPage(r.Context(), randomID(18), gid, title, content, m)
+	page, err := s.insertPage(r.Context(), randomID(18), gid, title, content, nil, m)
 	if err != nil {
 		s.dbError(err)
 		writeError(w, 500, "Couldn't duplicate the page.")
@@ -976,8 +992,8 @@ func (s *server) activity(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]any{"activity": out})
 }
 
-func (s *server) insertPage(ctx context.Context, id, groupID, title string, content json.RawMessage, m membership) (map[string]any, error) {
-	_, err := s.db.Exec(ctx, `INSERT INTO "Page" ("id","groupId","title","content","createdBy","lastEditedByName","updatedAt") VALUES ($1,$2,$3,$4,$5,$6,NOW())`, id, groupID, title, content, nullString(m.UserID), m.DisplayName)
+func (s *server) insertPage(ctx context.Context, id, groupID, title string, content json.RawMessage, parentID *string, m membership) (map[string]any, error) {
+	_, err := s.db.Exec(ctx, `INSERT INTO "Page" ("id","groupId","parentId","title","content","createdBy","lastEditedByName","updatedAt") VALUES ($1,$2,$3,$4,$5,$6,$7,NOW())`, id, groupID, nullStringPtr(parentID), title, content, nullString(m.UserID), m.DisplayName)
 	if err != nil {
 		return nil, err
 	}

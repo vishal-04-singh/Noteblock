@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
-type ThemeMode = "light" | "dark" | "system";
-type AccentColor = "violet" | "blue" | "emerald" | "rose" | "amber" | "cyan";
+type ThemeMode = "light" | "dark" | "dim" | "system";
+export type AccentColor = "violet" | "blue" | "emerald" | "rose" | "amber" | "cyan" | "indigo" | "lime" | "coral";
 
 interface ThemeContextValue {
   mode: ThemeMode;
@@ -28,6 +28,7 @@ function getResolved(mode: ThemeMode): "light" | "dark" {
     if (typeof window === "undefined") return "dark";
     return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   }
+  if (mode === "dim") return "dark";
   return mode;
 }
 
@@ -48,7 +49,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const r = getResolved(mode);
     setResolved(r);
-    document.documentElement.setAttribute("data-theme", r);
+    document.documentElement.setAttribute("data-theme", mode === "dim" ? "dim" : r);
     document.documentElement.setAttribute("data-accent", accent);
   }, [mode, accent]);
 

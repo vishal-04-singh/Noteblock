@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, Monitor, Moon, Sun, Palette } from "lucide-react";
-import { useTheme } from "~/lib/theme";
+import { useTheme, type AccentColor } from "~/lib/theme";
 
 // lib/theme.tsx's AccentColor type isn't exported as a runtime array, so the
 // list of selectable accents lives here, next to the component that renders
 // them. Keep this in sync with the AccentColor union in ~/lib/theme.tsx.
-export type AccentChoice = "violet" | "blue" | "emerald" | "rose" | "amber" | "cyan";
-export const ACCENTS: AccentChoice[] = ["violet", "blue", "emerald", "rose", "amber", "cyan"];
+export type AccentChoice = AccentColor;
+export const ACCENTS: AccentChoice[] = ["violet", "indigo", "blue", "cyan", "emerald", "lime", "amber", "coral", "rose"];
 
 const ACCENT_HEX: Record<AccentChoice, string> = {
   violet: "#8b5cf6",
@@ -15,6 +15,9 @@ const ACCENT_HEX: Record<AccentChoice, string> = {
   rose: "#f43f5e",
   amber: "#f59e0b",
   cyan: "#06b6d4",
+  indigo: "#6366f1",
+  lime: "#84cc16",
+  coral: "#f97316",
 };
 
 const ACCENT_GRADIENT: Record<AccentChoice, string> = {
@@ -24,11 +27,15 @@ const ACCENT_GRADIENT: Record<AccentChoice, string> = {
   rose: "linear-gradient(135deg, #fb7185, #e11d48)",
   amber: "linear-gradient(135deg, #fbbf24, #d97706)",
   cyan: "linear-gradient(135deg, #22d3ee, #0891b2)",
+  indigo: "linear-gradient(135deg, #a5b4fc, #4f46e5)",
+  lime: "linear-gradient(135deg, #bef264, #65a30d)",
+  coral: "linear-gradient(135deg, #fdba74, #ea580c)",
 };
 
 const THEME_OPTIONS = [
   { value: "light" as const, label: "Light", Icon: Sun },
   { value: "dark" as const, label: "Dark", Icon: Moon },
+  { value: "dim" as const, label: "Dim", Icon: Moon },
   { value: "system" as const, label: "System", Icon: Monitor },
 ];
 
@@ -71,7 +78,7 @@ function ThemeToggleComponent({ controlSize = "compact" }: ThemeToggleProps = {}
     };
   }, [open]);
 
-  const ActiveIcon = mode === "dark" ? Moon : mode === "light" ? Sun : Monitor;
+  const ActiveIcon = mode === "dark" || mode === "dim" ? Moon : mode === "light" ? Sun : Monitor;
   const isPageControl = controlSize === "page";
   const iconSize = isPageControl ? 15 : 14;
 
@@ -120,7 +127,7 @@ function ThemeToggleComponent({ controlSize = "compact" }: ThemeToggleProps = {}
               Appearance
             </p>
             <div
-              className="mb-5 grid grid-cols-3 gap-1.5 rounded-xl border p-1"
+              className="mb-5 grid grid-cols-4 gap-1.5 rounded-xl border p-1"
               style={{ borderColor: 'var(--border, rgba(255,255,255,0.08))', background: 'rgba(0,0,0,0.2)' }}
             >
               {THEME_OPTIONS.map(({ value, label, Icon }) => {
