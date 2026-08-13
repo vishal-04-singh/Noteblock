@@ -50,8 +50,9 @@ export async function action({ request, params }: ActionFunctionArgs) {
   const groupId = params.groupId!;
   const formData = await request.formData();
   const title = String(formData.get("title") || "").trim();
+  const parentId = String(formData.get("parentId") || "").trim() || undefined;
 
-  const result = await createPage(request, groupId, title || "Untitled");
+  const result = await createPage(request, groupId, title || "Untitled", parentId);
 
   if (!result.ok) {
     throw new Response(result.data?.error || "Couldn't create page.", {

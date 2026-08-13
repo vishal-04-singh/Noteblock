@@ -200,11 +200,11 @@ export default function CommandPalette({ items = [] }: { items?: SearchItem[] })
               >
                 <PaletteIcon type={r.icon || "page"} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 500, truncate: "true", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <div style={{ fontSize: 14, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {r.title}
                   </div>
                   {r.subtitle && (
-                    <div style={{ fontSize: 12, color: "var(--text-tertiary, rgba(255,255,255,0.5))", truncate: "true", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <div style={{ fontSize: 12, color: "var(--text-tertiary, rgba(255,255,255,0.5))", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {r.subtitle}
                     </div>
                   )}

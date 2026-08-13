@@ -109,7 +109,7 @@ export default function HomePage() {
   return (
     <main
       style={{ background: "var(--bg-primary)", color: "var(--text-primary)" }}
-      className="relative h-screen flex flex-col overflow-hidden"
+      className="dashboard-shell relative h-screen flex flex-col overflow-hidden"
     >
       {/* Ambient accent orb */}
       <div
@@ -128,7 +128,7 @@ export default function HomePage() {
           background: "rgb(var(--bg-secondary) / 0.6)",
           backdropFilter: "blur(12px)",
         }}
-        className="shrink-0 sticky top-0 z-30 flex items-center justify-between px-6 py-3.5 sm:px-8"
+        className="dashboard-header shrink-0 sticky top-0 z-30 flex items-center justify-between px-6 py-3.5 sm:px-8"
       >
         <Link
           to="/home"

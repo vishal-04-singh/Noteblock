@@ -9,7 +9,6 @@ import {
   useFetcher,
   useParams,
   useNavigate,
-  useNavigation,
   Link,
   redirect,
 } from "react-router";
@@ -32,6 +31,7 @@ import {
   Users,
   X,
   Check,
+  CornerDownRight,
 } from "lucide-react";
 import {
   getPage,
@@ -239,10 +239,7 @@ export default function NotePage() {
     useLoaderData<typeof loader>();
   const params = useParams();
   const navigate = useNavigate();
-  const navigation = useNavigation();
   const mounted = useIsMounted();
-
-  const isPageTransitioning = navigation.state === "loading" && navigation.location.pathname.includes(`/pages/`);
 
   const saveFetcher = useFetcher();
   const shareFetcher = useFetcher();
@@ -333,9 +330,9 @@ export default function NotePage() {
     );
   }
 
-  function createNewPage() {
+  function createNewPage(parentId?: string) {
     newPageFetcher.submit(
-      { title: "Untitled" },
+      { title: "Untitled", ...(parentId ? { parentId } : {}) },
       { method: "post", action: `/group/${groupId}/pages` }
     );
   }
@@ -387,7 +384,6 @@ export default function NotePage() {
         ? "Saved"
         : "";
 
-  const filteredPages = allPages.filter(p => (p.title || "Untitled").toLowerCase().includes(searchQuery.toLowerCase()));
   const favPages = allPages.filter(p => favIds.has(p.id));
 
   return (
@@ -485,15 +481,6 @@ export default function NotePage() {
           animation: note-skeleton-shimmer 1.6s ease-in-out infinite;
         }
 
-        /* stable editor section prevents jump between skeleton and real editor */
-        .note-editor-section { view-transition-name: note-editor; }
-
-        /* smooth crossfade when navigating between pages */
-        @view-transition { navigation: auto; }
-        ::view-transition-old(note-editor) { animation: 180ms ease-out both fade-out; }
-        ::view-transition-new(note-editor) { animation: 220ms ease-in  both fade-in;  }
-        @keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
-        @keyframes fade-in  { from { opacity: 0; } to { opacity: 1; } }
       `}</style>
 
       <aside
@@ -571,7 +558,7 @@ export default function NotePage() {
         <div className="px-3 pb-3">
           <button
             type="button"
-            onClick={createNewPage}
+            onClick={() => createNewPage()}
             disabled={newPageFetcher.state === "submitting"}
             className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium hover:bg-white/[0.06] transition-colors disabled:opacity-60"
             style={{ color: 'var(--text-secondary)' }}
@@ -639,42 +626,18 @@ export default function NotePage() {
           <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'var(--text-tertiary)' }}>
             Pages
           </p>
-          <ul className="flex flex-col gap-0.5">
-            {filteredPages.map((p) => (
-              <li key={p.id} onContextMenu={(e) => handleContextMenu(e, p)}>
-                {renamingId === p.id ? (
-                  <form onSubmit={(e) => handleRenameSubmit(e, p.id)} className="flex items-center px-2.5 py-1.5">
-                    <input
-                      autoFocus
-                      value={renameValue}
-                      onChange={(e) => setRenameValue(e.target.value)}
-                      onBlur={() => setRenamingId(null)}
-                      className="w-full bg-transparent text-sm outline-none"
-                      style={{ color: 'var(--text-primary)' }}
-                    />
-                  </form>
-                ) : (
-                  <Link
-                    to={`/group/${groupId}/pages/${p.id}`}
-                    className={`note-page-row flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm transition-colors ${
-                      p.id === page.id
-                        ? "note-active-row font-medium"
-                        : ""
-                    }`}
-                    style={{ color: p.id === page.id ? 'var(--text-primary)' : 'var(--text-secondary)' }}
-                  >
-                    <FileText
-                      size={14}
-                      strokeWidth={1.6}
-                      className="shrink-0"
-                      style={{ opacity: p.id === page.id ? 0.9 : 0.5 }}
-                    />
-                    <span className="truncate">{p.title || "Untitled"}</span>
-                  </Link>
-                )}
-              </li>
-            ))}
-          </ul>
+          <PageTree
+            pages={allPages}
+            groupId={groupId}
+            currentPageId={page.id}
+            searchQuery={searchQuery}
+            renamingId={renamingId}
+            renameValue={renameValue}
+            onRenameValue={setRenameValue}
+            onRenameSubmit={handleRenameSubmit}
+            onRenameCancel={() => setRenamingId(null)}
+            onContextMenu={handleContextMenu}
+          />
 
           <div className="mt-4">
             <button 
@@ -864,14 +827,9 @@ export default function NotePage() {
             className="relative mx-auto w-full max-w-5xl px-5 py-10 sm:px-7 note-editor-section"
             style={{
               minHeight: '60vh',
-              opacity: isPageTransitioning ? 0 : 1,
-              transition: 'opacity 220ms ease',
             }}
           >
-            {isPageTransitioning ? (
-              <EditorSkeleton />
-            ) : (
-              <>
+            <>
                 <div className="note-title-wrap relative mb-2">
                   <input
                     value={title}
@@ -909,8 +867,7 @@ export default function NotePage() {
                     <EditorSkeleton />
                   )}
                 </div>
-              </>
-            )}
+            </>
           </section>
         </div>
         </div>
@@ -1000,6 +957,16 @@ export default function NotePage() {
             <Copy size={14} strokeWidth={2} />
             Duplicate
           </button>
+          <button
+            className="context-menu-item"
+            onClick={() => {
+              createNewPage(contextMenu.pageId);
+              setContextMenu(null);
+            }}
+          >
+            <CornerDownRight size={14} strokeWidth={2} />
+            Add nested page
+          </button>
           <div className="h-px my-1" style={{ backgroundColor: 'var(--border)' }} />
           <button 
             className="context-menu-item context-menu-item--danger"
@@ -1062,6 +1029,68 @@ function HeaderButton({
       {children}
     </button>
   );
+}
+
+type SidebarPage = import("~/lib/pages.server").PageSummary;
+
+function PageTree({
+  pages,
+  groupId,
+  currentPageId,
+  searchQuery,
+  renamingId,
+  renameValue,
+  onRenameValue,
+  onRenameSubmit,
+  onRenameCancel,
+  onContextMenu,
+}: {
+  pages: SidebarPage[];
+  groupId: string;
+  currentPageId: string;
+  searchQuery: string;
+  renamingId: string | null;
+  renameValue: string;
+  onRenameValue: (value: string) => void;
+  onRenameSubmit: (event: React.FormEvent, pageId: string) => void;
+  onRenameCancel: () => void;
+  onContextMenu: (event: React.MouseEvent, page: { id: string; title: string }) => void;
+}) {
+  const children = new Map<string | null, SidebarPage[]>();
+  for (const item of pages) {
+    const key = item.parentId && pages.some((candidate) => candidate.id === item.parentId) ? item.parentId : null;
+    children.set(key, [...(children.get(key) ?? []), item]);
+  }
+  const query = searchQuery.trim().toLowerCase();
+  const isVisible = (item: SidebarPage): boolean =>
+    !query || (item.title || "Untitled").toLowerCase().includes(query) || (children.get(item.id) ?? []).some(isVisible);
+
+  const renderBranch = (parentId: string | null, depth = 0): React.ReactNode =>
+    (children.get(parentId) ?? []).filter(isVisible).map((item) => {
+      const hasChildren = (children.get(item.id) ?? []).some(isVisible);
+      return (
+        <li key={item.id} onContextMenu={(event) => onContextMenu(event, item)}>
+          {renamingId === item.id ? (
+            <form onSubmit={(event) => onRenameSubmit(event, item.id)} className="flex items-center px-2.5 py-1.5" style={{ paddingLeft: `${10 + depth * 14}px` }}>
+              <input autoFocus value={renameValue} onChange={(event) => onRenameValue(event.target.value)} onBlur={onRenameCancel} className="w-full bg-transparent text-sm outline-none" style={{ color: "var(--text-primary)" }} />
+            </form>
+          ) : (
+            <Link
+              to={`/group/${groupId}/pages/${item.id}`}
+              className={`note-page-row flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm transition-colors ${item.id === currentPageId ? "note-active-row font-medium" : ""}`}
+              style={{ color: item.id === currentPageId ? "var(--text-primary)" : "var(--text-secondary)", marginLeft: `${depth * 14}px` }}
+            >
+              {depth > 0 ? <CornerDownRight size={12} strokeWidth={1.6} style={{ opacity: 0.38 }} /> : <FileText size={14} strokeWidth={1.6} style={{ opacity: item.id === currentPageId ? 0.9 : 0.5 }} />}
+              <span className="truncate">{item.title || "Untitled"}</span>
+              {hasChildren && <span className="ml-auto text-[10px]" style={{ color: "var(--text-quaternary)" }}>{children.get(item.id)?.filter(isVisible).length}</span>}
+            </Link>
+          )}
+          {hasChildren && <ul className="flex flex-col gap-0.5">{renderBranch(item.id, depth + 1)}</ul>}
+        </li>
+      );
+    });
+
+  return <ul className="flex flex-col gap-0.5">{renderBranch(null)}</ul>;
 }
 
 function EditorSkeleton() {
